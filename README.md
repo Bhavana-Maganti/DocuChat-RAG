@@ -54,12 +54,30 @@ Open http://localhost:5173.
 - `POST /ask` — body `{question: str}`, returns `{answer, sources}`
 - `GET /health` — health check
 
-## What I learned (fill this in as you build — interviewers ask!)
+## What I learned
 
-- Why chunk size and overlap matter for retrieval quality
-- Cosine similarity vs. MMR retrieval strategies
-- Handling citations so users trust the answer
-- Streaming LLM tokens for better UX
+- **Vector stores don't deduplicate by default.** While testing, I
+  uploaded the same PDF twice and ChromaDB stored every chunk twice,
+  so retrieval returned identical snippets. A production fix is to
+  hash each chunk and upsert with a stable ID like
+  (source_file, chunk_index).
+
+- **Retrieval and generation are separate problems.** Testing that the
+  vector search returned the right chunks BEFORE worrying about the
+  LLM's answer helped me isolate bugs. Good retrieval almost
+  guarantees a good answer; bad retrieval guarantees a bad one,
+  no matter how good the LLM is.
+
+- **Chunk size and overlap directly affect answer quality.** With
+  chunk_size = 800 and overlap = 120, I avoided cutting important
+  sentences across chunk boundaries. Smaller chunks lose context;
+  larger ones dilute relevance.
+
+- **Provider-agnostic LLM access is worth the tiny upfront cost.**
+  Wiring the backend to switch between OpenAI and Groq via a single
+  env variable let me build the whole project at zero cost using
+  Groq's free tier, while keeping the door open to swap providers
+  for production.
 
 ## Next steps
 
